@@ -1,0 +1,6 @@
+/model_output
+/market_data_exports
+/logs
+/notebooks
+/.ipynb_checkpoints
+/__pycache__

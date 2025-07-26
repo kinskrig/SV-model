@@ -252,31 +252,32 @@ class MarketData:
             logger.error(f"Error exporting all data for {self.ticker}: {str(e)}")
             return {}
 
-if __name__ == "__main__":
-    # Example usage
-    ticker = "AAPL"
-    market_data = MarketData(ticker)
+# # sample execution
+# if __name__ == "__main__":
+#     # Example usage
+#     ticker = "AAPL"
+#     market_data = MarketData(ticker)
     
-    # Create output directory for CSV files
-    output_directory = "market_data_exports"
+#     # Create output directory for CSV files
+#     output_directory = "market_data_exports"
     
-    # Export all data to CSV files
-    exported_files = market_data.export_all_data_to_csv(output_dir=output_directory)
+#     # Export all data to CSV files
+#     exported_files = market_data.export_all_data_to_csv(output_dir=output_directory)
     
-    if exported_files:
-        print(f"\nExported files for {ticker}:")
-        for data_type, filepath in exported_files.items():
-            print(f"  {data_type.upper()}: {filepath}")
-    else:
-        print(f"No data was exported for {ticker}")
+#     if exported_files:
+#         print(f"\nExported files for {ticker}:")
+#         for data_type, filepath in exported_files.items():
+#             print(f"  {data_type.upper()}: {filepath}")
+#     else:
+#         print(f"No data was exported for {ticker}")
     
-    # Also display some data in console for verification
-    stock_df = market_data.get_stock_data()
-    if not stock_df.empty:
-        print(f"\nStock Data for {ticker} (last 5 rows):\n", stock_df.tail())
+#     # Also display some data in console for verification
+#     stock_df = market_data.get_stock_data()
+#     if not stock_df.empty:
+#         print(f"\nStock Data for {ticker} (last 5 rows):\n", stock_df.tail())
     
-    calls, puts = market_data.get_option_chain()
-    if not calls.empty:
-        print(f"\nCalls for {ticker} (first 5 rows):\n", calls.head())
-    if not puts.empty:
-        print(f"\nPuts for {ticker} (first 5 rows):\n", puts.head())
+#     calls, puts = market_data.get_option_chain()
+#     if not calls.empty:
+#         print(f"\nCalls for {ticker} (first 5 rows):\n", calls.head())
+#     if not puts.empty:
+#         print(f"\nPuts for {ticker} (first 5 rows):\n", puts.head())

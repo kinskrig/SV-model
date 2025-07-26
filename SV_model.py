@@ -118,43 +118,43 @@ class SVModel:
         df['midPrice'] = (df['bid'] + df['ask']) / 2
         return df
 
-# Main Execution
-if __name__ == "__main__":
+# sample execution
+# if __name__ == "__main__":
     
-    ticker = "AAPL"
-    SV = SVModel(ticker)
+#     ticker = "AAPL"
+#     SV = SVModel(ticker)
    
 
-    calls_filtered = SV.filter_options(SV.calls)
-    puts_filtered = SV.filter_options(SV.puts)
+#     calls_filtered = SV.filter_options(SV.calls)
+#     puts_filtered = SV.filter_options(SV.puts)
     
-    # Combine calls and puts for calibration
-    combined_options = pd.concat([calls_filtered, puts_filtered])
-    combined_options['optionType'] = combined_options['optionType'].str.lower()
+#     # Combine calls and puts for calibration
+#     combined_options = pd.concat([calls_filtered, puts_filtered])
+#     combined_options['optionType'] = combined_options['optionType'].str.lower()
 
-    # Initial guess with tighter bounds
-    initial_params = [0.3, 0.7, -0.2, 0.4]  # [alpha, beta, rho, nu]
-    bounds = [(0.01, 1.0), (0.01, 0.99), (-0.99, 0.99), (0.01, 1.5)]
+#     # Initial guess with tighter bounds
+#     initial_params = [0.3, 0.7, -0.2, 0.4]  # [alpha, beta, rho, nu]
+#     bounds = [(0.01, 1.0), (0.01, 0.99), (-0.99, 0.99), (0.01, 1.5)]
     
-    # Calibrate SINGLE set of parameters for all options
-    result = minimize(SV.sabr_calibration, initial_params, 
-                      args=(combined_options, SV.S0, SV.T, SV.r), 
-                      bounds=bounds, method='L-BFGS-B')
-    alpha, beta, rho, nu = result.x
+#     # Calibrate SINGLE set of parameters for all options
+#     result = minimize(SV.sabr_calibration, initial_params, 
+#                       args=(combined_options, SV.S0, SV.T, SV.r), 
+#                       bounds=bounds, method='L-BFGS-B')
+#     alpha, beta, rho, nu = result.x
     
-    # Generate strikes for volatility smile (range around current price)
-    min_strike = SV.S0 * 0.7
-    max_strike = SV.S0 * 1.3
-    strikes = np.linspace(min_strike, max_strike, 50)
+#     # Generate strikes for volatility smile (range around current price)
+#     min_strike = SV.S0 * 0.7
+#     max_strike = SV.S0 * 1.3
+#     strikes = np.linspace(min_strike, max_strike, 50)
     
-    # Generate volatility smile with calibrated parameters
-    implied_vols = SV.generate_vol_smile(alpha, beta, rho, nu, S0, T, strikes)
+#     # Generate volatility smile with calibrated parameters
+#     implied_vols = SV.generate_vol_smile(alpha, beta, rho, nu, S0, T, strikes)
     
-    # Save to CSVs (same smile for calls/puts since SABR is strike-based)
-    output_df = pd.DataFrame({'Strike': strikes, 'ImpliedVolatility': implied_vols})
-    output_df.to_csv('volatility_smile_calls.csv', index=False)
+#     # Save to CSVs (same smile for calls/puts since SABR is strike-based)
+#     output_df = pd.DataFrame({'Strike': strikes, 'ImpliedVolatility': implied_vols})
+#     output_df.to_csv('volatility_smile_calls.csv', index=False)
     
-    print("Volatility smiles saved to 'volatility_smile_calls.csv' and 'volatility_smile_puts.csv'")
-    print(f"Current AAPL Stock Price: ${S0:.2f}")
-    print(f"Risk-Free Rate (10-year Treasury): {r*100:.2f}%")
-    print(f"Time to Expiration: {T*365:.1f} days")
+#     print("Volatility smiles saved to 'volatility_smile_calls.csv' and 'volatility_smile_puts.csv'")
+#     print(f"Current AAPL Stock Price: ${S0:.2f}")
+#     print(f"Risk-Free Rate (10-year Treasury): {r*100:.2f}%")
+#     print(f"Time to Expiration: {T*365:.1f} days")

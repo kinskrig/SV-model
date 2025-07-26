@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class MarketData:
     """Class to fetch daily stock and option data from the market using yfinance."""
     
-    def __init__(self, ticker: str):
+    def __init__(self, ticker: str, expiration_date: Optional[str] = None):
         """
         Initialize MarketData with a ticker symbol.
         
@@ -21,6 +21,7 @@ class MarketData:
         """
         self.ticker = ticker.upper()
         self.stock = yf.Ticker(self.ticker)
+        self.default_expiration = expiration_date
     
     def get_stock_data(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> pd.DataFrame:
         """
@@ -74,12 +75,16 @@ class MarketData:
                 logger.error(f"No option expirations available for {self.ticker}")
                 return pd.DataFrame(), pd.DataFrame()
                 
-            # Use provided expiration or select the nearest one
+            # Use provided expiration, then instance default, then nearest
             if expiration_date is None:
-                expiration_date = expirations[0]
-            elif expiration_date not in expirations:
-                logger.warning(f"Expiration {expiration_date} not found. Using nearest: {expirations[0]}")
-                expiration_date = expirations[0]
+                expiration_date = self.default_expiration  # Use instance default
+            
+            if expiration_date is None:
+                expiration_date = expirations[0]  # Fallback to nearest expiration
+            
+            # if expiration_date not in expirations:
+            #     logger.warning(f"Expiration {expiration_date} not found. Using nearest: {expirations[0]}")
+            #     expiration_date = expirations[0]
                 
             logger.info(f"Fetching option chain for {self.ticker} with expiration {expiration_date}")
             option_chain = self.stock.option_chain(expiration_date)
@@ -170,51 +175,111 @@ class MarketData:
             logger.error(f"Error exporting stock data for {self.ticker}: {str(e)}")
             return ""
     
+
+
     def export_option_data_to_csv(self, expiration_date: Optional[str] = None, 
-                                 output_dir: str = ".") -> Tuple[str, str]:
+                                output_dir: str = ".") -> Tuple[str, str]:
         """
         Export option data to CSV files.
         
         Args:
             expiration_date (str, optional): Expiration date in 'YYYY-MM-DD' format. 
-                                           If None, fetches the nearest expiration.
+                                        If None, exports ALL available expirations.
             output_dir (str): Directory to save the CSV files. Defaults to current directory.
         
         Returns:
             Tuple[str, str]: Paths to the exported calls and puts CSV files.
         """
         try:
-            calls, puts = self.get_option_chain(expiration_date)
+            # Remove this line: calls, puts = self.get_option_chain(expiration_date)
             
             # Create output directory if it doesn't exist
             os.makedirs(output_dir, exist_ok=True)
             
             calls_filepath = ""
             puts_filepath = ""
+        
+            # Export ALL available expirations
+            all_chains = self.get_all_option_chains()
             
-            # Export calls data
-            if not calls.empty:
+            all_calls = []
+            all_puts = []
+            
+            for exp_date, (calls_df, puts_df) in all_chains.items():
+                if not calls_df.empty:
+                    all_calls.append(calls_df)
+                if not puts_df.empty:
+                    all_puts.append(puts_df)
+            
+            # Combine and export all calls
+            if all_calls:
+                combined_calls = pd.concat(all_calls, ignore_index=True)
                 calls_filename = f"{self.ticker}-CALLS.csv"
                 calls_filepath = os.path.join(output_dir, calls_filename)
-                calls.to_csv(calls_filepath, index=False)
-                logger.info(f"Calls data exported to {calls_filepath}")
-            else:
-                logger.warning(f"No calls data to export for {self.ticker}")
+                combined_calls.to_csv(calls_filepath, index=False)
+                logger.info(f"All calls data exported to {calls_filepath}")
             
-            # Export puts data
-            if not puts.empty:
+            # Combine and export all puts
+            if all_puts:
+                combined_puts = pd.concat(all_puts, ignore_index=True)
                 puts_filename = f"{self.ticker}-PUTS.csv"
                 puts_filepath = os.path.join(output_dir, puts_filename)
-                puts.to_csv(puts_filepath, index=False)
-                logger.info(f"Puts data exported to {puts_filepath}")
-            else:
-                logger.warning(f"No puts data to export for {self.ticker}")
+                combined_puts.to_csv(puts_filepath, index=False)
+                logger.info(f"All puts data exported to {puts_filepath}")
             
             return calls_filepath, puts_filepath
             
         except Exception as e:
             logger.error(f"Error exporting option data for {self.ticker}: {str(e)}")
             return "", ""
+
+
+    # def export_option_data_to_csv(self, expiration_date: Optional[str] = None, 
+    #                              output_dir: str = ".") -> Tuple[str, str]:
+    #     """
+    #     Export option data to CSV files.
+        
+    #     Args:
+    #         expiration_date (str, optional): Expiration date in 'YYYY-MM-DD' format. 
+    #                                        If None, fetches the nearest expiration.
+    #         output_dir (str): Directory to save the CSV files. Defaults to current directory.
+        
+    #     Returns:
+    #         Tuple[str, str]: Paths to the exported calls and puts CSV files.
+    #     """
+    #     try:
+    #         calls, puts = self.get_option_chain(expiration_date)
+    #         calls, puts = self.get_all_option_chains()
+            
+    #         # Create output directory if it doesn't exist
+    #         os.makedirs(output_dir, exist_ok=True)
+            
+    #         calls_filepath = ""
+    #         puts_filepath = ""
+            
+    #         # Export calls data
+    #         if not calls.empty:
+    #             calls_filename = f"{self.ticker}-CALLS.csv"
+    #             calls_filepath = os.path.join(output_dir, calls_filename)
+    #             calls.to_csv(calls_filepath, index=False)
+    #             logger.info(f"Calls data exported to {calls_filepath}")
+    #         else:
+    #             logger.warning(f"No calls data to export for {self.ticker}")
+            
+    #         # Export puts data
+    #         if not puts.empty:
+    #             puts_filename = f"{self.ticker}-PUTS.csv"
+    #             puts_filepath = os.path.join(output_dir, puts_filename)
+    #             puts.to_csv(puts_filepath, index=False)
+    #             logger.info(f"Puts data exported to {puts_filepath}")
+    #         else:
+    #             logger.warning(f"No puts data to export for {self.ticker}")
+            
+    #         return calls_filepath, puts_filepath
+            
+    #     except Exception as e:
+    #         logger.error(f"Error exporting option data for {self.ticker}: {str(e)}")
+    #         return "", ""
     
     def export_all_data_to_csv(self, start_date: Optional[str] = None, end_date: Optional[str] = None,
                               expiration_date: Optional[str] = None, output_dir: str = ".") -> Dict[str, str]:
@@ -253,31 +318,31 @@ class MarketData:
             return {}
 
 # # sample execution
-# if __name__ == "__main__":
-#     # Example usage
-#     ticker = "AAPL"
-#     market_data = MarketData(ticker)
+if __name__ == "__main__":
+    # Example usage
+    ticker = "AAPL"
+    market_data = MarketData(ticker, '2025-08-29')
     
-#     # Create output directory for CSV files
-#     output_directory = "market_data_exports"
+    # Create output directory for CSV files
+    output_directory = "market_data_exports"
     
-#     # Export all data to CSV files
-#     exported_files = market_data.export_all_data_to_csv(output_dir=output_directory)
+    # Export all data to CSV files
+    exported_files = market_data.export_all_data_to_csv(output_dir=output_directory)
     
-#     if exported_files:
-#         print(f"\nExported files for {ticker}:")
-#         for data_type, filepath in exported_files.items():
-#             print(f"  {data_type.upper()}: {filepath}")
-#     else:
-#         print(f"No data was exported for {ticker}")
+    if exported_files:
+        print(f"\nExported files for {ticker}:")
+        for data_type, filepath in exported_files.items():
+            print(f"  {data_type.upper()}: {filepath}")
+    else:
+        print(f"No data was exported for {ticker}")
     
-#     # Also display some data in console for verification
-#     stock_df = market_data.get_stock_data()
-#     if not stock_df.empty:
-#         print(f"\nStock Data for {ticker} (last 5 rows):\n", stock_df.tail())
+    # Also display some data in console for verification
+    stock_df = market_data.get_stock_data()
+    if not stock_df.empty:
+        print(f"\nStock Data for {ticker} (last 5 rows):\n", stock_df.tail())
     
-#     calls, puts = market_data.get_option_chain()
-#     if not calls.empty:
-#         print(f"\nCalls for {ticker} (first 5 rows):\n", calls.head())
-#     if not puts.empty:
-#         print(f"\nPuts for {ticker} (first 5 rows):\n", puts.head())
+    calls, puts = market_data.get_option_chain()
+    if not calls.empty:
+        print(f"\nCalls for {ticker} (first 5 rows):\n", calls.head())
+    if not puts.empty:
+        print(f"\nPuts for {ticker} (first 5 rows):\n", puts.head())

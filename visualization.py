@@ -3,20 +3,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_volatility_smiles(ticker, expiration_date, csv_file, option_volume_threshold):
-    # Load model outputs
-    model_calls = pd.read_csv(csv_file)
-
-    
+def plot_volatility_smiles(ticker, expiration_date, market_puts, market_calls, model_ivs, option_volume_threshold):
     # Load market data
-    market_calls = pd.read_csv(f'./market_data_exports/{ticker}-CALLS.csv')
-    market_puts = pd.read_csv(f'./market_data_exports/{ticker}-PUTS.csv')
     market_price = pd.read_csv(f'./market_data_exports/{ticker}-PRICE.csv')
     current_price = market_price['Close'].iloc[-1]
+
     
     # Filter market options: volume > 1000 and within model strike range
-    min_strike = market_calls[market_calls['volume'] > option_volume_threshold]['strike'].min()
-    max_strike = market_calls[market_calls['volume'] > option_volume_threshold]['strike'].max()
+    min_strike = min(market_calls[market_calls['volume'] > option_volume_threshold]['strike'].min(), market_puts[market_puts['volume'] > option_volume_threshold]['strike'].min())
+    max_strike = max(market_calls[market_calls['volume'] > option_volume_threshold]['strike'].max(), market_puts[market_puts['volume'] > option_volume_threshold]['strike'].max())
     print(min_strike, max_strike)
     
     filtered_market_calls = market_calls[
@@ -29,9 +24,9 @@ def plot_volatility_smiles(ticker, expiration_date, csv_file, option_volume_thre
         (market_puts['strike'] <= max_strike)
     ]
     
-    filtered_model_calls = model_calls[
-        (model_calls['Strike'] >= min_strike) &
-        (model_calls['Strike'] <= max_strike)]
+    filtered_model_calls = model_ivs[
+        (model_ivs['Strike'] >= min_strike) &
+        (model_ivs['Strike'] <= max_strike)]
 
     # Create plot
     plt.figure(figsize=(12, 8))

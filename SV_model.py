@@ -12,10 +12,10 @@ class SVModel:
 
         current_date = datetime.datetime.now()
         expiration_date = datetime.datetime.strptime(expiration_date, '%Y-%m-%d')
-        self.T = (expiration_date - current_date).days / 365.0  # Corrected T calculation
+        self.T = (expiration_date - current_date).days / 365.0
         
-        calls_filtered = self.filter_options(self.calls)
-        puts_filtered = self.filter_options(self.puts)
+        calls_filtered = self.filter_options(self.calls, expiration_date)
+        puts_filtered = self.filter_options(self.puts, expiration_date)
         
         # Combine calls and puts for calibration
         combined_options = pd.concat([calls_filtered, puts_filtered])
@@ -112,7 +112,7 @@ class SVModel:
         vols = [self.sabr_volatility(alpha, beta, rho, nu, K, F, T) for K in strikes]
         return vols
 
-    def filter_options(self, df):
+    def filter_options(self, df, expiration_date):
         df = df.copy()
         df = df[(df['bid'] > 0) & (df['ask'] > 0) & (df['volume'] > 10)]
         df['midPrice'] = (df['bid'] + df['ask']) / 2

@@ -3,20 +3,20 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_volatility_smiles(ticker, expiration_date, csv_file):
+def plot_volatility_smiles(ticker, expiration_date, csv_file, option_volume_threshold):
     # Load model outputs
     model_calls = pd.read_csv(csv_file)
 
     
     # Load market data
-    market_calls = pd.read_csv('./market_data_exports/AAPL-CALLS.csv')
-    market_puts = pd.read_csv('./market_data_exports/AAPL-PUTS.csv')
-    market_price = pd.read_csv('./market_data_exports/AAPL-PRICE.csv')
+    market_calls = pd.read_csv(f'./market_data_exports/{ticker}-CALLS.csv')
+    market_puts = pd.read_csv(f'./market_data_exports/{ticker}-PUTS.csv')
+    market_price = pd.read_csv(f'./market_data_exports/{ticker}-PRICE.csv')
     current_price = market_price['Close'].iloc[-1]
     
     # Filter market options: volume > 1000 and within model strike range
-    min_strike = market_calls[market_calls['volume'] > 1000]['strike'].min()
-    max_strike = market_calls[market_calls['volume'] > 1000]['strike'].max()
+    min_strike = market_calls[market_calls['volume'] > option_volume_threshold]['strike'].min()
+    max_strike = market_calls[market_calls['volume'] > option_volume_threshold]['strike'].max()
     print(min_strike, max_strike)
     
     filtered_market_calls = market_calls[
@@ -52,7 +52,7 @@ def plot_volatility_smiles(ticker, expiration_date, csv_file):
              f'Current Price: ${current_price:.2f}', fontsize=12)
     
     # Format plot
-    plt.title(f'Volatility Smile Comparison: Model vs Market ({ticker} {expiration_date})', fontsize=14)
+    plt.title(f'Volatility Smile Comparison: Model vs Market ({ticker} {expiration_date}) {min_strike} {max_strike}', fontsize=14)
     plt.xlabel('Strike Price', fontsize=12)
     plt.ylabel('Implied Volatility', fontsize=12)
     plt.grid(alpha=0.3)
@@ -60,7 +60,7 @@ def plot_volatility_smiles(ticker, expiration_date, csv_file):
     plt.tight_layout()
     
     # Save and show
-    plt.savefig(f'model_output/{ticker}-SABR-VOLSMILE.png', dpi=300)
+    plt.savefig(f'model_output/{ticker}-SABR-VOLSMILE-{min_strike}-{max_strike}.png', dpi=300)
     plt.show()
     return plt
 

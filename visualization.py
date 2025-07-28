@@ -8,7 +8,7 @@ def plot_volatility_smiles(ticker, expiration_date, market_puts, market_calls, m
     market_price = pd.read_csv(f'./market_data_exports/{ticker}-PRICE.csv')
     current_price = market_price['Close'].iloc[-1]
 
-    
+
     # Filter market options: volume > 1000 and within model strike range
     min_strike = min(market_calls[market_calls['volume'] > option_volume_threshold]['strike'].min(), market_puts[market_puts['volume'] > option_volume_threshold]['strike'].min())
     max_strike = max(market_calls[market_calls['volume'] > option_volume_threshold]['strike'].max(), market_puts[market_puts['volume'] > option_volume_threshold]['strike'].max())

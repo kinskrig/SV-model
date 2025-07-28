@@ -8,6 +8,7 @@ import os
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+logging.disable()
 
 class MarketData:
     """Class to fetch daily stock and option data from the market using yfinance."""
@@ -22,6 +23,9 @@ class MarketData:
         self.ticker = ticker.upper()
         self.stock = yf.Ticker(self.ticker)
         self.default_expiration = expiration_date
+        self.underlying_price = self.get_stock_data()['Close'].iloc[-1]
+        self.calls = self.get_option_chain()[0]
+        self.puts = self.get_option_chain()[1]
     
     def get_stock_data(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> pd.DataFrame:
         """
